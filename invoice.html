@@ -1,0 +1,290 @@
+<html>
+<head>
+	<title>Create Invoice</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	
+	<link rel="stylesheet" type="text/css" href="lib/bootstrap.min.css">
+
+</head>
+<body>
+
+	<div class="col-md-8 col-md-offset-2">
+		<div class="page-header">
+			<h1>Create an invoice</h1>
+		</div>
+
+		<form class="form-horizontal" role="form">
+		  <div class="form-group">
+		    <label for="invoiceNum" class="col-sm-2 control-label">Invoicenr:</label>
+		    <div class="col-sm-6">
+		      <input class="form-control" id="invoiceNum" name="invoicenr" value="1234567">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		    <label for="inputName" class="col-sm-2 control-label">Kundenavn:</label>
+		    <div class="col-sm-6">
+		      <input class="form-control" id="inputName" name="navn" placeholder="Navn">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		    <label for="inputAddress1" class="col-sm-2 control-label">Adress</label>
+		    <div class="col-sm-6">
+		      <input class="form-control" id="inputAddress1" name="gadeadress" placeholder="Gade adress">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		    <div class="col-sm-6 col-md-offset-2">
+		      <input class="form-control" id="inputAddress2" name="postnr" placeholder="postnr">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		    <div class="col-sm-6 col-md-offset-2">
+		      <input class="form-control" id="inputAddress3" name="by" placeholder="bynavn">
+		  	<hr/>
+		    </div>
+		  </div>
+		  <input name="filler" value="   " class="hidden"/>
+		  <div class="form-group">
+		  	<label for="inputFrameNo" class="col-sm-2 control-label">Stelnr:</label>
+		    <div class="col-sm-6">
+		      <input class="form-control" id="inputFrameNo" name="stelnr" placeholder="stelnr">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		  	<label for="inputLock" class="col-sm-2 control-label">Låsnummer:</label>
+		    <div class="col-sm-6">
+		      <input class="form-control" id="inputLock" name="locknr" placeholder="låsnummer">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		  	<label for="inputLockModel" class="col-sm-2 control-label">Låsmodel:</label>
+		    <div class="col-sm-6">
+		      <input class="form-control" id="inputLockModel" name="lockmodel" placeholder="låsmodel">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		    <label for="inputBike" class="col-sm-2 control-label">Cykel:</label>
+		    <div class="col-sm-4">
+		      <input class="form-control" id="inputBike" name="cykel" placeholder="cykelbeskrivelse">
+		    </div>
+		    <div class="col-sm-2">
+		      <input type="number" class="form-control" name="cykel_pris" placeholder="Pris">
+		    </div>
+		  </div>
+		  <div class="form-group">
+		    <label for="inputEtc" class="col-sm-2 control-label">Andet:</label>
+		    <div class="col-sm-4">
+		      <input class="form-control" name="andet" id="inputEtc">
+		    </div>
+		    <div class="col-sm-2">
+		      <input type="number" class="form-control" name="andet_pris" placeholder="Pris">
+		    </div>	
+		  </div>
+		  <div class="form-group">
+		    <div class="col-sm-offset-2 col-sm-6">
+		      <button class="btn btn-primary">Generere faktura!</button>
+		    </div>
+		  </div>
+
+		</form>
+
+	</div>
+	
+
+
+	<script type="text/javascript" src="lib/jquery-1.7.1.min.js"></script>
+	<script type="text/javascript" src="lib/Blob.js"></script>
+	<script type="text/javascript" src="lib/FileSaver.js"></script>
+	<script type="text/javascript" src="lib/jspdf.min.js"></script>
+	<script type="text/javascript">
+		
+		var right_x_pos = 150;
+		var current_y_pos = 10;
+		var total_price = 0;
+		/* This hash keeps all styling info (except y_pos) in one central place */
+		var object_pos = {
+				"invoicenr" : {  "name" : "Invoice Number:", "x" : 20, "y" : 30, "font_type" : "bold" },
+				"navn" : {  "name" : "", "x" : 20, "y" : 40 },
+				"gadeadress" : {  "name" : "", "x" : 20, "y" : 50 },
+				"postnr" : {  "name" : "", "x" : 20, "y" : 60 },
+				"by" : {  "name" : "", "x" : 20, "y" : 70 },
+				"cykel" : {  "name" : "Cykel:", "x" : 20, "y" : 80 },
+				"cykel_pris" : {  "name" : "", "x" : right_x_pos, "y" : 90 },
+				"andet" : {  "name" : "Andet:", "x" : 20, "y" : 100 },
+				"andet_pris" : {  "name" : "", "x" : right_x_pos, "y" : 110 },
+				"stelnr" : {  "name" : "Stelnr:", "x" : 20, "y" : 120 },
+				"locknr" : {  "name" : "Låsnr:", "x" : 20, "y" : 130 },
+				"lockmodel" : {  "name" : "Låsmodel:", "x" : 20, "y" : 140 },
+				"filler" : { "name" : " ", "x" : 20 }
+		};
+		
+		/**
+		* util function to capitalise first letter of every word
+		**/
+		String.prototype.capitalise = function() { 
+	   		return this.toLowerCase().replace(/^.|\s\S/g, function(a) { return a.toUpperCase(); });
+		}
+
+		function createInvoice() {
+			var invoice = new jsPDF();
+			var form_data = $('form').serializeArray();
+			invoice = addHeader(invoice);
+
+			$.each(form_data, function(i, field) {
+				if (isPrice(field.name)) {
+					calcTotalPrice(field);
+				}
+				//don't print empty fields
+				if (field.value.length > 0) {
+					var line = formatLine(field);
+					x_pos = get_pos(field.name, 'x');
+					y_pos = getNextYPos(field.name);
+					font_type = getFontType(field.name);
+					invoice.setFontType(font_type);
+					invoice.text(x_pos, y_pos, line);
+				}
+			});
+			getNextYPos(); //leave a space
+			invoice = addTotalPrice(invoice);
+			invoice = addLastServiceDate(invoice);
+			invoice = addFooter(invoice);
+			invoice.save(generateFileName());
+			return false;
+		}
+
+		function addFooter(doc) {
+			doc.setFontType("normal");
+			doc.setFontSize(10);
+			getNextYPos(); // insert some space
+			getNextYPos();
+			doc.text(20, getSmallYPos(), "GEM DENNE REGNING OG LÅSEBEVIS!");
+			doc.text(20, getSmallYPos(), "Første service eftersyn er gratis indenfor 2 måneder fra købsdato.");
+			doc.text(20, getSmallYPos(), "Herefter anbefales service mindst hver 12 måned. Gerne hver 6 måned.");
+			doc.text(20, getSmallYPos(), "Stelgaranti er 2 år.");
+			doc.text(20, getSmallYPos(), "Reklamationsret for andre dele er 2 år. ");
+			doc.text(20, getSmallYPos(), "Slid, misbrug og udefrakommende skader på cyklen dækkes ikke af garanti.");
+			doc.text(20, getSmallYPos(), "Smør kæde jævnligt i vådt vejr. Sprøjt ikke olie el. lign ind i lejer. ");
+			doc.text(20, getSmallYPos(), "Kæden skal efterspændes, når den ikke længere er stram. ");
+			doc.text(20, getSmallYPos(), "Pump dæk hver 3. måned. Anbefalet dæktryk i PSI kan aflæses på dækside. ");
+			doc.text(20, getSmallYPos(), "For lavt dæktryk øger risiko for punkteringer og forøger slid på dæk.");
+			doc.text(20, getSmallYPos(), "Efterspænd og opret barnestol, hvis den ikke længere er vandret.");
+			doc.text(20, getSmallYPos(), "En cykel er beregnet til transport i by af 1 voksen og 1 barn, max. 150 kg.");
+			doc.text(20, getSmallYPos(), "Høj last på cyklen kræver oftere efterspænding og øger slid på hjul og dele.");
+			return doc;
+		}
+
+		function addLastServiceDate(doc) {
+			var date = new Date();
+			date.setMonth(date.getMonth()+1);
+			doc.text(20, getNextYPos(), "SIDSTE DATO FOR GRATIS EFTERSYN - " + formatDate(date));
+			return doc;
+		}
+
+		function formatDate(date) {
+			var dd = date.getDate();
+			var mm = date.getMonth()+1; //January is 0!
+			var yyyy = date.getFullYear();
+
+			if(dd < 10) {
+			    dd='0'+dd
+			} 
+
+			if(mm<10) {
+			    mm='0'+mm
+			} 
+
+			date = dd +'/'+mm+'/'+yyyy;
+			return date;
+		}
+
+		function isPrice(text) {
+			if (text !== undefined && text.indexOf("_pris") >= 0){
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		function calcTotalPrice(datum) {
+			total_price += parseInt(datum.value);
+		}
+
+		function addHeader(doc) {
+			doc.setFontType("bold");
+			doc.text(right_x_pos, getNextYPos(), "CYKELFABRIKKEN");
+			doc.setFontType("normal");
+			doc.text(right_x_pos, getNextYPos(), "Istedgade 92");
+			doc.text(right_x_pos, getNextYPos(), "1650 København V.");
+			doc.text(right_x_pos, getNextYPos(), "info@cykelfabrikken.dk");
+			doc.text(right_x_pos, getNextYPos(), "2712 3232");
+			doc.setFontType("bold");
+			doc.text(right_x_pos, getNextYPos(), formatDate(new Date()));
+	
+			current_y_pos -= 60; // reset y to allow address to start from top
+			return doc;
+		}
+
+		function addTotalPrice(doc) {
+			doc.setFontType("bold");
+			line_y = getNextYPos();
+			doc.text(20, line_y, "I ALT -");
+			doc.text(right_x_pos, line_y, total_price.toString());
+
+			return doc;
+		}
+
+		/*
+			It's tiresome updating our y_positions in the pos hash
+			all the time, use a global to keep track of current y pos
+			increment with 10 each time. 
+			Except for price elements - we want these on the same line.
+		*/
+		function getNextYPos(name) {
+			if (name !== undefined && name.indexOf("_pris") >= 0) {
+				return current_y_pos;				
+			} else {
+				current_y_pos += 10;
+				return current_y_pos;
+			}
+		}
+
+		/**
+		* Little hacky - for footer we only want small line breaks
+		*/
+		function getSmallYPos() {
+			current_y_pos += 5;
+			return current_y_pos;
+		}
+
+		function getFontType(name) {
+			if (object_pos[name].hasOwnProperty("font_type")) {
+				return object_pos[name]["font_type"];
+			}
+			return "normal";
+		}
+
+		function generateFileName() {
+			return $('#inputName').val() + " " + $('#invoiceNum').val();
+		}
+
+		
+		function formatLine(field) {
+			name = object_pos[field.name].name
+			if (name.length > 0) {
+				name += " ";
+			}
+			return name + field.value;
+		}
+
+		function get_pos(name, axis){
+			return object_pos[name][axis]
+		}
+
+		$(document).ready(function(){
+			$('button').click(createInvoice);
+		});
+	</script>
+</body>
+</html>
