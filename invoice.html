@@ -555,7 +555,7 @@ b=new Uint8Array(b);return a(1,b)});return g});
 		}
 
 		function calcTotalPrice(datum) {
-			total_price += parseInt(datum.value);
+			if (datum.value.length > 0) total_price += parseInt(datum.value);
 		}
 
 		function addHeader(doc) {
