@@ -476,9 +476,9 @@ b=new Uint8Array(b);return a(1,b)});return g});
 
 		function createInvoice() {
 			var invoice = new jsPDF();
+			invoice.setFontSize(10);
 			var form_data = $('form').serializeArray();
 			invoice = addHeader(invoice);
-
 			$.each(form_data, function(i, field) {
 				if (isPrice(field.name)) {
 					calcTotalPrice(field);
